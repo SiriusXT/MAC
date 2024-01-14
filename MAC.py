@@ -1,10 +1,8 @@
-apath = r'X:\workspace\datasets\Amazon\@aspect\art\ASTs2id.txt'
-user_ys_path = '../data/Arts_Crafts_and_Sewing_5/user_ys.pickle'
-item_ys_path = '../data/Arts_Crafts_and_Sewing_5/item_ys.pickle'
-sentiment_feat_path = r'X:\workspace\python\papercode\@MARS\RGCL_5datasets\RGCL-Art\ReviewGraph-main\BERT\sentiment.pkl'
+apath = r'ASTs2id.txt'
+sentiment_feat_path = r'./BERT/sentiment.pkl'
 dataset_name = 'Arts_Crafts_and_Sewing_5'
 dataset_name_path = '../data/Arts_Crafts_and_Sewing_5/Arts_Crafts_and_Sewing_5.json'
-aspect_feat_path = r'X:\workspace\python\papercode\@MARS\RGCL_5datasets\RGCL-Art\ReviewGraph-main\BERT\aspect.pkl'
+aspect_feat_path = r'./BERT/aspect.pkl'
 
 import argparse
 import time
