@@ -1,8 +1,8 @@
-apath = r'ASTs2id.txt'
+apath = r'UI-AS-id.txt'
+aspect_feat_path = r'./BERT/aspect.pkl'
 sentiment_feat_path = r'./BERT/sentiment.pkl'
 dataset_name = 'Arts_Crafts_and_Sewing_5'
-dataset_name_path = '../data/Arts_Crafts_and_Sewing_5/Arts_Crafts_and_Sewing_5.json'
-aspect_feat_path = r'./BERT/aspect.pkl'
+dataset_name_path = './data/Arts_Crafts_and_Sewing_5/Arts_Crafts_and_Sewing_5.json'
 
 import argparse
 import time
@@ -29,13 +29,13 @@ os.environ["CUBLAS_WORKSPACE_CONFIG"] = ":4096:8"
 
 def seed_everything(seed):
     os.environ["PYTHONHASHSEED"] = str(seed)
-    torch.manual_seed(seed)  # Current CPU
-    torch.cuda.manual_seed(seed)  # Current GPU
-    np.random.seed(seed)  # Numpy module
-    random.seed(seed)  # Python random module
-    torch.backends.cudnn.benchmark = False  # Close optimization
-    torch.backends.cudnn.deterministic = True  # Close optimization
-    torch.cuda.manual_seed_all(seed)  # All GPU (Optional)
+    torch.manual_seed(seed)
+    torch.cuda.manual_seed(seed)
+    np.random.seed(seed)
+    random.seed(seed)
+    torch.backends.cudnn.benchmark = False
+    torch.backends.cudnn.deterministic = True
+    torch.cuda.manual_seed_all(seed)
     dgl.random.seed(seed)
     torch.use_deterministic_algorithms(True)
 
@@ -56,7 +56,7 @@ class Data(object):
         self._num_user = dataset_info["user_size"]
         self._num_item = dataset_info["item_size"]
 
-        review_feat_path = f'../checkpoint/{dataset_name}/BERT-Whitening/bert-base-uncased_sentence_vectors_dim_{review_fea_size}.pkl'
+        review_feat_path = f'./checkpoint/{dataset_name}/BERT-Whitening/bert-base-uncased_sentence_vectors_dim_{review_fea_size}.pkl'
         self.train_review_feat = torch.load(review_feat_path)
 
         self.review_feat_updated = {}
@@ -241,7 +241,6 @@ class Data(object):
                 pass  # print("(rrow[x], rcol[x]) not in aspect_sentiment")
 
         def gen(rrow, rcol, au5s):  # user aspect
-            import pickle
             u_i = {}
             i_u = {}
             u_i_s = {}
@@ -504,7 +503,6 @@ class GCN(nn.Module):
         self.num_users = params.num_users
         self.num_items = params.num_items
         self.dropout = nn.Dropout(dropout_rate)
-        self.dropout1 = nn.Dropout(0.4)
         self.score = nn.Embedding(5, params.emb_dim * 4)
         self.score_r = nn.Embedding(5, params.emb_dim * 4)
         # self.score_a = nn.Embedding(5, params.emb_dim*3)
@@ -515,7 +513,6 @@ class GCN(nn.Module):
         # self.sentiment_a_r = nn.Linear(params.emb_size, params.emb_dim, bias=False)  ###
         self.aspect_w = nn.Linear(params.emb_dim, params.emb_dim, bias=False)
         self.aspect_w_r = nn.Linear(params.emb_dim, params.emb_dim, bias=False)
-        self.aspect_w_3 = nn.Linear(params.emb_dim, params.emb_dim, bias=False)
         self.sentiment_w = nn.Linear(params.emb_dim, params.emb_dim, bias=False)  ###
         self.sentiment_w_r = nn.Linear(params.emb_dim, params.emb_dim, bias=False)
 
@@ -534,9 +531,6 @@ class GCN(nn.Module):
     def forward(self, g, feature):
         g.nodes["user"].data["fe"], g.nodes["item"].data["fe"] = torch.split(feature, [self.num_users, self.num_items],
                                                                              dim=0)
-        g.nodes["user"].data["fee"], g.nodes["item"].data["fee"] = torch.split(self.weight,
-                                                                               [self.num_users, self.num_items],
-                                                                               dim=0)
         g.nodes["aspect"].data["fe"] = self.aspect_w(self.aspect_feat)
         g.nodes["aspect"].data["fe1"] = self.aspect_w_r(self.aspect_feat)
 
@@ -546,13 +540,7 @@ class GCN(nn.Module):
         g.edges["review_r"].data["s"] = self.score_r(g.edges["review_r"].data["score"])
 
         g.edges["aspect->user"].data["r"] = self.sentiment_w(g.edges["aspect->user"].data["sentiment_feat"])
-        # g.edges["aspect->user"].data["a_score"] = self.score_a(g.edges["aspect->user"].data["score"])
         g.edges["aspect->item"].data["r"] = self.sentiment_w_r(g.edges["aspect->item"].data["sentiment_feat"])
-        # g.edges["aspect->item"].data["a_score"] = self.score_a_r(g.edges["aspect->item"].data["score"])
-        # g.edges["aspect->review"].data["r"] = self.sentiment_w_3(g.edges["aspect->review"].data["sentiment_feat"])
-
-        # g.edges["user<item>user"].data["r"] = g.nodes["item"].data["fe"][g.edges["user<item>user"].data["item"]]
-        # g.edges["item<user>item"].data["r"] = g.nodes["user"].data["fe"][g.edges["item<user>item"].data["user"]]
         g.edges["user-aspect-user"].data["r"] = g.nodes["aspect"].data["fe1"][
             g.edges["user-aspect-user"].data["aspect"][:, 0]]
         g.edges["item-aspect-item"].data["r"] = g.nodes["aspect"].data["fe1"][
@@ -588,11 +576,11 @@ class GCN(nn.Module):
                 fn.sum(msg='m', out='h2')),
             "user-aspect-item": (
                 lambda edges: {
-                    'm': (edges.src["fee"] + edges.data["r"]) * self.dropout(edges.src["c-user-aspect-item"])},
+                    'm': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-user-aspect-item"])},
                 fn.sum(msg='m', out='h3')),
             "item-aspect-user": (
                 lambda edges: {
-                    'm': (edges.src["fee"] + edges.data["r"]) * self.dropout(edges.src["c-item-aspect-user"])},
+                    'm': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-item-aspect-user"])},
                 fn.sum(msg='m', out='h3')),
         }
         g.multi_update_all(funcs, "stack")
@@ -609,6 +597,19 @@ class GCN(nn.Module):
                                                         "c-item-aspect-user"],
                                                     ], -1)
 
+        def l2inv(x, y):
+            x_norm = torch.nn.functional.normalize(x, p=2, dim=-1)
+            y_norm = torch.nn.functional.normalize(y, p=2, dim=-1)
+            l2_norm_loss = torch.nn.functional.mse_loss(x_norm, y_norm)
+            return l2_norm_loss
+
+        loss = 0
+        u1, u2, u3, _ = torch.chunk(g.nodes["user"].data["from_a"], 4, dim=-1)
+        i1, i2, i3, _ = torch.chunk(g.nodes["item"].data["from_a"], 4, dim=-1)
+        loss += l2inv(u1, u2) + l2inv(u1, u3) + l2inv(u2, u3)
+        loss += l2inv(i1, i2) + l2inv(i1, i3) + l2inv(i2, i3)
+        loss = -loss
+
         funcs1 = {
             "review": (lambda edges: {'m': (torch.cat([edges.src["from_a"], edges.data["r"]], -1)) * torch.sigmoid(
                 edges.data["s"]) * self.dropout(edges.src["cur"])}, fn.sum(msg='m', out='h')),
@@ -619,7 +620,7 @@ class GCN(nn.Module):
         g.nodes["user"].data["fe"] = g.nodes["user"].data["h"][:, 0, :] * g.nodes["user"].data["cur"]
         g.nodes["item"].data["fe"] = g.nodes["item"].data["h"][:, 0, :] * g.nodes["item"].data["cir"]
 
-        return torch.cat([g.nodes["user"].data["fe"], g.nodes["item"].data["fe"]], 0), 0  # ,#(l1+l2)/2
+        return torch.cat([g.nodes["user"].data["fe"], g.nodes["item"].data["fe"]], 0), loss
 
 
 class Net(nn.Module):
@@ -637,7 +638,7 @@ class Net(nn.Module):
         self.fc_item2 = nn.Linear(params.emb_dim * 4, params.emb_dim * 4)
 
         self.dropout1 = nn.Dropout(0.4)  # 0.3)#gloa-bl_dropout)
-        self.leaky_relu = nn.LeakyReLU(negative_slope=0.2)
+        # self.leaky_relu = nn.LeakyReLU(negative_slope=0.2)
         self.predictor1 = nn.Sequential(
             nn.Linear(params.emb_dim * 4, params.emb_dim * 4, bias=False),
             nn.ReLU(),
@@ -652,7 +653,7 @@ class Net(nn.Module):
 
     def forward(self, enc_graph_dict, users, items):
 
-        feat, l12 = self.encoder(enc_graph_dict, self.weight)
+        feat, loss = self.encoder(enc_graph_dict, self.weight)
 
         u_feat, i_feat = torch.split(feat, [self.num_user, self.num_item], dim=0)
 
@@ -662,8 +663,7 @@ class Net(nn.Module):
         feat = torch.cat([ua, ia], dim=0)
         user_embeddings, item_embeddings = feat[users], feat[items]
         pred_ratings2 = self.predictor1(user_embeddings * item_embeddings)
-        # l12=(self.contrast_loss(ur0,ua)+self.contrast_loss(ir0,ia))/2
-        return pred_ratings2, 0  # l12#0  # +pred_ratings2
+        return pred_ratings2, loss
 
 
 def evaluate(args, net, dataset, flag='valid'):
@@ -738,11 +738,11 @@ def train(params):
             batch_user = u_list[idx]
             batch_item = i_list[idx]
             batch_rating = r_list[idx]
-            pred_ratings, l12 = net(dataset.train_enc_graph, batch_user, batch_item)
+            pred_ratings, l2inv = net(dataset.train_enc_graph, batch_user, batch_item)
 
             real_pred_ratings = (torch.softmax(pred_ratings, dim=1) * nd_possible_rating_values.view(1, -1)).sum(dim=1)
 
-            loss = rating_loss_net(pred_ratings, batch_rating).mean() + l12  ##########!!!!!!!!!!!!
+            loss = rating_loss_net(pred_ratings, batch_rating).mean() + l2inv  ##l2inv
 
             optimizer.zero_grad()
 

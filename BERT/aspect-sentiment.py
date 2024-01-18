@@ -1,7 +1,5 @@
 # -*- coding: utf-8 -*-
-"""
-validate Bert-Whitening: https://kexue.fm/archives/8069
-"""
+
 import pandas as pd
 import argparse
 import torch
@@ -93,9 +91,6 @@ def collate_fn(data):
 
 
 def compute_kernel_bias(vecs, vec_dim):
-    """计算kernel和bias
-    最后的变换：y = (x + bias).dot(kernel)
-    """
     # vecs = np.concatenate(vecs, axis=0)
     mu = vecs.mean(axis=0, keepdims=True)
     cov = np.cov(vecs.T)
@@ -107,8 +102,6 @@ def compute_kernel_bias(vecs, vec_dim):
 
 
 def transform_and_normalize(vecs, kernel=None, bias=None):
-    """应用变换，然后标准化
-    """
     if not (kernel is None or bias is None):
         vecs = (vecs + bias).dot(kernel)
     return vecs / (vecs**2).sum(axis=1, keepdims=True)**0.5
