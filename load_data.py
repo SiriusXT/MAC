@@ -46,8 +46,7 @@ def read_amazon_review_raw_data_and_split(dataset_path, word_dim=100):
         data = data.drop(data[data['review_text'] == '999'].index.tolist())
         print('the number of nan', data.review_text.isnull().value_counts())
 
-        # 清洗文本
-        tqdm.pandas(desc='Clean string')
+         tqdm.pandas(desc='Clean string')
         data['review_text'] = data['review_text'].progress_map(lambda x: clean_str(x))
         tqdm.pandas(desc='Delete unused words')
         data['review_text'] = data['review_text'].progress_map(lambda x: filter_unused_words(x, word2id))
@@ -555,10 +554,10 @@ def count_user_item_doc_words(user_doc, item_doc):
     return average_user_words, average_item_words
 
 
-if __name__ == '__main__':
+# if __name__ == '__main__':
 
-    dp = 'data/Toys_and_Games_5/Toys_and_Games_5.json'
+#     dp = 'data/Toys_and_Games_5/Toys_and_Games_5.json'
 
-    data = load_sentiment_data(dp)
+#     data = load_sentiment_data(dp)
     # u_w, i_w = count_user_item_doc_words(data['user_doc'], data['item_doc'])
     # print(f'user_avg_words: {u_w:.1f}, item_avg_words: {i_w:.1f}')

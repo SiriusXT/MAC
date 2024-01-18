@@ -84,7 +84,7 @@ class Data(object):
 
             rating_pairs = (user_id, item_id)
             rating_pairs_rev = (item_id, user_id)
-            rating_pairs = np.concatenate([rating_pairs, rating_pairs_rev], axis=1)  ## 双向 ！！！！
+            rating_pairs = np.concatenate([rating_pairs, rating_pairs_rev], axis=1) 
 
             rating_values = np.concatenate([rating, rating],
                                            axis=0)
@@ -108,7 +108,7 @@ class Data(object):
             return rating_pairs, rating_values
 
         print('Generating train/valid/test data.\n')
-        self.train_rating_pairs, self.train_rating_values = _generate_train_pair_value(self.train_datas)  # 双向
+        self.train_rating_pairs, self.train_rating_values = _generate_train_pair_value(self.train_datas)  
         self.valid_rating_pairs, self.valid_rating_values = _generate_test_pair_value(self.valid_datas)
         self.test_rating_pairs, self.test_rating_values = _generate_test_pair_value(self.test_datas)
 
@@ -196,7 +196,7 @@ class Data(object):
         a2r2 = []
         a2rs = []
         # a2rj = []
-        #############################
+        ###
         for x in trange(len(rrow)):
             # if self.train_datas[2][x]!=5:continue
             if (rrow[x], rcol[x]) in aspect_sentiment:
@@ -221,22 +221,16 @@ class Data(object):
                     sis += [score]
                     a2rs_temp = []
                     su_temp = []
-                    # juitemp=[]
                     for s, j in v.items():
                         a2rs_temp += [sentiment_feat[s]]
                         su_temp += [sentiment_feat[s]]
-                        # juitemp += [j]
-                        # ju += [j]
-                        # si_temp += [sentiment_feat[s]]
-                        # ji += [j]
+
                     a2rs_temp = torch.mean(torch.stack(a2rs_temp, 0), 0)
                     su_temp = torch.mean(torch.stack(su_temp, 0), 0)
-                    # juitemp=sum(juitemp) / len(juitemp)
                     a2rs += [a2rs_temp]
                     su += [su_temp]
                     si += [su_temp]
-                    # ju += [juitemp]
-                    # ji += [juitemp]
+
             else:
                 pass  # print("(rrow[x], rcol[x]) not in aspect_sentiment")
 
@@ -354,7 +348,6 @@ class Data(object):
         with open('aucol-aicol-10.pkl', 'wb') as f:
             pickle.dump(red, f, pickle.HIGHEST_PROTOCOL)
         # print("over")
-        # os.exit()
         ##<<
         with open('aucol-aurow-10.pkl', 'rb') as f:
             aucol_aurow = pickle.load(f)
@@ -366,7 +359,7 @@ class Data(object):
         graph_data[("item", "item-aspect-item", "item")] = (aicol_airow[0], aicol_airow[1])
         graph_data[("user", "user-aspect-item", "item")] = (aucol_aicol[0], aucol_aicol[1])
         graph_data[("item", "item-aspect-user", "user")] = (aucol_aicol[1], aucol_aicol[0])
-        ##aspect高阶《《《《《《《《
+        
         graph_data[("aspect", "aspect->user", "user")] = (aurow, aucol)
         graph_data[("aspect", "aspect->item", "item")] = (airow, aicol)
 
@@ -382,11 +375,8 @@ class Data(object):
 
         graph.edges["aspect->user"].data["sentiment_feat"] = torch.stack(su, 0).float()
         graph.edges["aspect->user"].data["score"] = torch.tensor([x - 1 for x in sus]).int()
-        # graph.edges["aspect->user"].data["jixing"] = torch.tensor(ju).int()
         graph.edges["aspect->item"].data["sentiment_feat"] = torch.stack(si, 0).float()
         graph.edges["aspect->item"].data["score"] = torch.tensor([x - 1 for x in sis]).int()
-
-        # graph.edges["aspect->item"].data["jixing"] = torch.tensor(ji).int()
 
         def _calc_norm(x, d):
             x = x.numpy().astype('float32')
@@ -414,10 +404,8 @@ class Data(object):
         graph.nodes["item"].data["c-item-aspect-item-r"] = _calc_norm(graph.out_degrees(etype="item-aspect-item"), 0.5)
         graph.nodes["user"].data["c-user-aspect-item"] = _calc_norm(graph.out_degrees(etype="user-aspect-item"), 0.5)
         graph.nodes["item"].data["c-user-aspect-item"] = _calc_norm(graph.in_degrees(etype="user-aspect-item"), 0.5)
-        graph.nodes["item"].data["c-item-aspect-user"] = _calc_norm(graph.out_degrees(etype="item-aspect-user"),
-                                                                    0.5)
-        graph.nodes["user"].data["c-item-aspect-user"] = _calc_norm(graph.in_degrees(etype="item-aspect-user"),
-                                                                    0.5)
+        graph.nodes["item"].data["c-item-aspect-user"] = _calc_norm(graph.out_degrees(etype="item-aspect-user"),0.5)
+        graph.nodes["user"].data["c-item-aspect-user"] = _calc_norm(graph.in_degrees(etype="item-aspect-user"),0.5)
         return graph
 
     def _train_data(self, batch_size=1024):
@@ -437,9 +425,7 @@ class Data(object):
         for i in range(n_batch):
             begin_idx = i * batch_size
             end_idx = begin_idx + batch_size
-            batch_users, batch_items, batch_ratings = users[begin_idx: end_idx], items[
-                                                                                 begin_idx: end_idx], rating_values[
-                                                                                                      begin_idx: end_idx]
+            batch_users, batch_items, batch_ratings = users[begin_idx: end_idx], items[begin_idx: end_idx], rating_values[begin_idx: end_idx]
             batch_reviews = self.train_review_pairs[begin_idx: end_idx]
 
             u_list.append(torch.LongTensor(batch_users).to('cuda:0'))
@@ -559,43 +545,31 @@ class GCN(nn.Module):
 
         funcs = {
             "aspect->user": (lambda edges: {
-                'm': ((edges.src["fe"] + edges.data["r"])) * self.dropout1(
-                    edges.src["cau"])}, fn.sum(msg='m', out='h')),
+                'm': ((edges.src["fe"] + edges.data["r"])) * self.dropout(edges.src["cau"])}, fn.sum(msg='m', out='h')),
             "aspect->item": (lambda edges: {
-                'm': ((edges.src["fe"] + edges.data["r"])) * self.dropout1(
-                    edges.src["cai"])}, fn.sum(msg='m', out='h')),
+                'm': ((edges.src["fe"] + edges.data["r"])) * self.dropout(edges.src["cai"])}, fn.sum(msg='m', out='h')),
             "user-aspect-user": (
-                lambda edges: {
-                    'm': (edges.src["fe"] + edges.data["r"]) * torch.sigmoid(
+                lambda edges: {'m': (edges.src["fe"] + edges.data["r"]) * torch.sigmoid(
                         edges.data["s1"] + edges.data["s2"]) * self.dropout(edges.src["c-user-aspect-user"])},
                 fn.sum(msg='m', out='h1')),
             "item-aspect-item": (
-                lambda edges: {
-                    'm': (edges.src["fe"] + edges.data["r"]) * torch.sigmoid(
+                lambda edges: {'m': (edges.src["fe"] + edges.data["r"]) * torch.sigmoid(
                         edges.data["s1"] + edges.data["s2"]) * self.dropout(edges.src["c-item-aspect-item"])},
                 fn.sum(msg='m', out='h2')),
             "user-aspect-item": (
-                lambda edges: {
-                    'm': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-user-aspect-item"])},
+                lambda edges: {'m': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-user-aspect-item"])},
                 fn.sum(msg='m', out='h3')),
             "item-aspect-user": (
-                lambda edges: {
-                    'm': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-item-aspect-user"])},
+                lambda edges: {'m': (edges.src["fe"] + edges.data["r"]) * self.dropout(edges.src["c-item-aspect-user"])},
                 fn.sum(msg='m', out='h3')),
         }
         g.multi_update_all(funcs, "stack")
         g.nodes["user"].data["from_a"] = torch.cat([g.nodes["user"].data["h"][:, 0, :] * g.nodes["user"].data["cau"], \
-                                                    g.nodes["user"].data["h1"][:, 0, :] * g.nodes["user"].data[
-                                                        "c-user-aspect-user-r"], \
-                                                    g.nodes["user"].data["h3"][:, 0, :] * g.nodes["user"].data[
-                                                        "c-user-aspect-item"],
-                                                    ], -1)
+                                                    g.nodes["user"].data["h1"][:, 0, :] * g.nodes["user"].data["c-user-aspect-user-r"], \
+                                                    g.nodes["user"].data["h3"][:, 0, :] * g.nodes["user"].data["c-user-aspect-item"],], -1)
         g.nodes["item"].data["from_a"] = torch.cat([g.nodes["item"].data["h"][:, 0, :] * g.nodes["item"].data["cai"], \
-                                                    g.nodes["item"].data["h2"][:, 0, :] * g.nodes["item"].data[
-                                                        "c-item-aspect-item-r"], \
-                                                    g.nodes["item"].data["h3"][:, 0, :] * g.nodes["item"].data[
-                                                        "c-item-aspect-user"],
-                                                    ], -1)
+                                                    g.nodes["item"].data["h2"][:, 0, :] * g.nodes["item"].data["c-item-aspect-item-r"], \
+                                                    g.nodes["item"].data["h3"][:, 0, :] * g.nodes["item"].data["c-item-aspect-user"],], -1)
 
         def l2inv(x, y):
             x_norm = torch.nn.functional.normalize(x, p=2, dim=-1)

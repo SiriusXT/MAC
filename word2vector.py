@@ -32,8 +32,7 @@ Args.word2id_path = \
 Args.embedding_path = \
     '{}/word_embedding_{}.npy'.format(dir_path, Args.args_str)
 
-# glove 是一种基于全局统计量的word embedding的方法，由斯坦福NLP小组提出
-def load_glove():
+ def load_glove():
     tmp_file = get_tmpfile(GLOVE_TMP_PATH)
     if not os.path.exists(os.path.dirname(tmp_file)):
         os.mkdir(os.path.dirname(tmp_file))
