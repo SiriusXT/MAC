@@ -40,7 +40,7 @@ def seed_everything(seed):
     torch.use_deterministic_algorithms(True)
 
 
-seed_everything(2023)
+seed_everything(2024)
 
 
 class Data(object):
@@ -475,7 +475,7 @@ def config():
     args.gcn_dropout = 0.7
     args.device = torch.device(args.device)
     args.train_max_iter = 1000
-    args.batch_size = 271466
+    args.batch_size =  999999999
 
     return args
 
