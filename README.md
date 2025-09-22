@@ -9,7 +9,7 @@ This is our PyTorch implementation for the paper.
 
 ## Running the code
 
-    Run word2vector.py for word embedding. Glove pretraining weight is required.
-    Make sure can run load_sentiment_data in load_data.py
-    Run BERT/bert_whitening.py for obtaining the feature vector for each review.
-    If previous steps successfully run, then you can run MAC.py.
+Run word2vector.py for word embedding. Glove pretraining weight is required.
+Make sure can run load_sentiment_data in load_data.py
+Run BERT/bert_whitening.py for obtaining the feature vector for each review.
+If previous steps successfully run, then you can run MAC.py.
